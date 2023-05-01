@@ -1,109 +1,74 @@
 package util;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Stack;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.List;
 
 public class Calculadora {
 	private String expressaoPosFixa;
 	private String preFixaParaInfixa;
 
 	public void InfixaParaPosFixa(String expressaoIn) {
-		Stack<String> pilha = new Stack<>();
-		String[] elementos = expressaoIn.split(" ");
-		ArrayList<String> posFixa = new ArrayList<>();
+		Deque<String> operadores = new ArrayDeque<>();
+		List<String> saida = new ArrayList<>();
+		boolean esperaOperando = true;
 
-		for (String elemento : elementos) {
-			String operador = null;
-			if (elemento.equals("(") || elemento.equals("+") || elemento.equals("-") || elemento.equals("*")
-					|| elemento.equals("/")) {
-
-				if (!pilha.empty()) {
-					String topo = pilha.peek();
-					// mesmas precedências, portanto, sai o operador que veio primeiro
-					if (topo.equals("+") && elemento.equals("-")) {
-						posFixa.add(pilha.pop());
-						pilha.push(elemento);
-					} else if (topo.equals("+") && elemento.equals("+")) {
-						posFixa.add(pilha.pop());
-						pilha.push(elemento);
-					} else if (topo.equals("-") && elemento.equals("-")) {
-						posFixa.add(pilha.pop());
-						pilha.push(elemento);
-					} else if (topo.equals("-") && elemento.equals("+")) {
-						posFixa.add(pilha.pop());
-						pilha.push(elemento);
-					} else if (topo.equals("*") && elemento.equals("/")) {
-						posFixa.add(pilha.pop());
-						pilha.push(elemento);
-					} else if (topo.equals("*") && elemento.equals("*")) {
-						posFixa.add(pilha.pop());
-						pilha.push(elemento);
-					} else if (topo.equals("/") && elemento.equals("/")) {
-						posFixa.add(pilha.pop());
-						pilha.push(elemento);
-					} else if (topo.equals("/") && elemento.equals("*")) {
-						posFixa.add(pilha.pop());
-						pilha.push(elemento);
+		for (String elemento : elementos(expressaoIn)) {
+			switch (elemento) {
+				case "(" -> {
+					if (!esperaOperando) {
+						throw new IllegalArgumentException("Falta um operador antes de '('.");
 					}
-
-					// precedências diferentes, portanto, somente adiciono na pilha
-
-					else if (topo.equals("+") && elemento.equals("*")) {
-						pilha.push(elemento);
-					} else if (topo.equals("+") && elemento.equals("/")) {
-						pilha.push(elemento);
+					operadores.push(elemento);
+				}
+				case ")" -> {
+					if (esperaOperando) {
+						throw new IllegalArgumentException("Falta um operando antes de ')'.");
 					}
-
-					else if (topo.equals("-") && elemento.equals("*")) {
-						pilha.push(elemento);
-					} else if (topo.equals("-") && elemento.equals("/")) {
-						pilha.push(elemento);
-
-					} else if (topo.equals("/") && elemento.equals("-")) {
-						posFixa.add(pilha.pop());
-						pilha.push(elemento);
-					} else if (topo.equals("/") && elemento.equals("+")) {
-						posFixa.add(pilha.pop());
+					while (!operadores.isEmpty() && !operadores.peek().equals("(")) {
+						saida.add(operadores.pop());
 					}
-
-					else if (topo.equals("*") && elemento.equals("-")) {
-						posFixa.add(pilha.pop());
-					} else if (topo.equals("*") && elemento.equals("+")) {
-						posFixa.add(pilha.pop());
+					if (operadores.isEmpty()) {
+						throw new IllegalArgumentException("Parênteses desbalanceados.");
+					}
+					operadores.pop();
+				}
+				default -> {
+					if (precedencia(elemento) > 0) {
+						if (esperaOperando) {
+							throw new IllegalArgumentException("Falta um operando antes de " + elemento + ".");
+						}
+						while (!operadores.isEmpty()
+								&& precedencia(operadores.peek()) >= precedencia(elemento)) {
+							saida.add(operadores.pop());
+						}
+						operadores.push(elemento);
+						esperaOperando = true;
 					} else {
-						pilha.push(elemento);
-
-					}
-				} else if (pilha.empty()) {
-					if (elemento.equals("+") || elemento.equals("-") || elemento.equals("*") || elemento.equals("/")) {
-						posFixa.add(elemento);
-					} else {
-						pilha.push(elemento);
-
+						if (!esperaOperando) {
+							throw new IllegalArgumentException("Falta um operador entre os operandos.");
+						}
+						saida.add(elemento);
+						esperaOperando = false;
 					}
 				}
-
-			} else if (elemento.equals(")")) {
-				while (!pilha.peek().equals("(")) {
-					operador = pilha.pop();
-					posFixa.add(operador);
-				}
-				pilha.pop(); // retira o "(" da pilha
-			} else {
-				posFixa.add(elemento);
 			}
 		}
-
-		StringBuilder sb = new StringBuilder();
-		String separador = " ";
-
-		// printa a expressao em posfixa
-		for (String elemento : posFixa) {
-			sb.append(elemento).append(separador);
-			this.expressaoPosFixa = sb.toString();
-			System.out.print(elemento + " ");
-
+		if (esperaOperando) {
+			throw new IllegalArgumentException("A expressão termina sem um operando.");
 		}
+		while (!operadores.isEmpty()) {
+			String operador = operadores.pop();
+			if (operador.equals("(")) {
+				throw new IllegalArgumentException("Parênteses desbalanceados.");
+			}
+			saida.add(operador);
+		}
+
+		this.expressaoPosFixa = String.join(" ", saida);
+		System.out.print(this.expressaoPosFixa);
 	}
 
 	public Double calcularResultadoInfixaPorPosFixa() {
@@ -115,124 +80,105 @@ public class Calculadora {
 	}
 
 	public Double posFixaResultado(String expressaoPos) {
-		Stack<Double> pilha = new Stack<>();
-
-		String[] elementos = expressaoPos.split(" ");
-
-		for (String elemento : elementos) {
-
-			if (elemento.equals("+") || elemento.equals("-") || elemento.equals("*") || elemento.equals("/")) {
-				double operando2 = pilha.pop();
-				double operando1 = pilha.pop();
-
-				if (elemento.equals("+")) {
-					pilha.push(operando1 + operando2);
-				}
-
-				else if (elemento.equals("-")) {
-					pilha.push(operando1 - operando2);
-				}
-
-				else if (elemento.equals("*")) {
-					pilha.push(operando1 * operando2);
-
-				}
-
-				else if (elemento.equals("/")) {
-					pilha.push(operando1 / operando2);
-				}
-			} else {
-				double num = Double.parseDouble(String.valueOf(elemento));
-				pilha.push(num);
+		Deque<Double> pilha = new ArrayDeque<>();
+		for (String elemento : elementos(expressaoPos)) {
+			if (precedencia(elemento) == 0) {
+				pilha.push(Double.parseDouble(elemento));
+				continue;
 			}
+			exigirDoisOperandos(pilha);
+			double direito = pilha.pop();
+			double esquerdo = pilha.pop();
+			pilha.push(switch (elemento) {
+				case "+" -> esquerdo + direito;
+				case "-" -> esquerdo - direito;
+				case "*" -> esquerdo * direito;
+				case "/" -> esquerdo / direito;
+				default -> throw new IllegalArgumentException("Operador desconhecido: " + elemento);
+			});
 		}
-		return pilha.pop();
-
+		return retirarResultado(pilha);
 	}
 
 	public String posFixaParaInfixa(String expressaoPos) {
-		Stack<String> pilha = new Stack<>();
-		String[] elementos = expressaoPos.split(" ");
-
-		for (String elemento : elementos) {
-			if (elemento.equals("+") || elemento.equals("-") || elemento.equals("*") || elemento.equals("/")) {
-				String operando2 = pilha.pop();
-				String operando1 = pilha.pop();
-				String expressao = "(" + operando1 + " " + elemento + " " + operando2 + ")";
-				pilha.push(expressao);
-			} else {
-				pilha.push(elemento);
-			}
-		}
-
-		return pilha.pop();
+		return converter(expressaoPos, false);
 	}
 
 	public String posFixaParaPreFixa(String expressaoPos) {
-		Stack<String> pilha = new Stack<>();
-		String[] elementos = expressaoPos.split(" ");
-
-		for (String elemento : elementos) {
-
-			if (elemento.equals("+") || elemento.equals("-") || elemento.equals("*") || elemento.equals("/")) {
-				String operando2 = pilha.pop();
-				String operando1 = pilha.pop();
-				String expressao = elemento + " " + operando1 + " " + operando2;
-				pilha.push(expressao);
-			} else {
-				pilha.push(elemento);
-			}
-		}
-
-		return pilha.pop();
+		return converter(expressaoPos, true);
 	}
 
-	// Inverte a expressão Pré-fixa para realixar a conversão para Infixa
-	// futuramente.
 	public String preFixaReversa(String expressaoPre) {
-		Stack<String> pilha = new Stack<>();
-		String[] elementos = expressaoPre.split(" ");
-
-		for (String elemento : elementos) {
-			pilha.push(elemento);
-		}
-
-		String preFixaReversa = "";
-		while (!pilha.empty()) {
-			preFixaReversa += pilha.pop() + " ";
-		}
-
-		return preFixaReversa.trim();
+		List<String> invertidos = new ArrayList<>(List.of(elementos(expressaoPre)));
+		Collections.reverse(invertidos);
+		return String.join(" ", invertidos);
 	}
 
 	public String preFixaParaInfixa(String expressaoPre) {
-		String preFixaReversaStr = preFixaReversa(expressaoPre);
-
-		Stack<String> pilha = new Stack<>();
-		String[] elementos = preFixaReversaStr.split(" ");
-
-		for (String elemento : elementos) {
-
-			if (elemento.equals("+") || elemento.equals("-") || elemento.equals("*") || elemento.equals("/")) {
-				String operando2 = pilha.pop();
-				String operando1 = pilha.pop();
-				String expressao = "( " + operando2 + " " + elemento + " " + operando1 + " )";
-				pilha.push(expressao);
-			} else {
+		Deque<String> pilha = new ArrayDeque<>();
+		for (String elemento : elementos(preFixaReversa(expressaoPre))) {
+			if (precedencia(elemento) == 0) {
 				pilha.push(elemento);
+			} else {
+				exigirDoisOperandos(pilha);
+				String esquerdo = pilha.pop();
+				String direito = pilha.pop();
+				pilha.push("( " + esquerdo + " " + elemento + " " + direito + " )");
 			}
 		}
-		this.preFixaParaInfixa = pilha.peek();
-		return pilha.pop();
+		this.preFixaParaInfixa = retirarResultado(pilha);
+		return this.preFixaParaInfixa;
 	}
 
 	public void preFixaParaPosFixa() {
 		InfixaParaPosFixa(this.preFixaParaInfixa);
-
 	}
 
 	public Double preFixaResultado() {
 		return posFixaResultado(expressaoPosFixa);
 	}
 
+	private static String converter(String expressaoPos, boolean prefixa) {
+		Deque<String> pilha = new ArrayDeque<>();
+		for (String elemento : elementos(expressaoPos)) {
+			if (precedencia(elemento) == 0) {
+				pilha.push(elemento);
+			} else {
+				exigirDoisOperandos(pilha);
+				String direito = pilha.pop();
+				String esquerdo = pilha.pop();
+				pilha.push(prefixa ? elemento + " " + esquerdo + " " + direito
+						: "(" + esquerdo + " " + elemento + " " + direito + ")");
+			}
+		}
+		return retirarResultado(pilha);
+	}
+
+	private static String[] elementos(String expressao) {
+		if (expressao == null || expressao.isBlank()) {
+			throw new IllegalArgumentException("Informe uma expressão.");
+		}
+		return expressao.strip().split("\\s+");
+	}
+
+	private static int precedencia(String operador) {
+		return switch (operador) {
+			case "+", "-" -> 1;
+			case "*", "/" -> 2;
+			default -> 0;
+		};
+	}
+
+	private static void exigirDoisOperandos(Deque<?> pilha) {
+		if (pilha.size() < 2) {
+			throw new IllegalArgumentException("Faltam operandos para o operador.");
+		}
+	}
+
+	private static <T> T retirarResultado(Deque<T> pilha) {
+		if (pilha.size() != 1) {
+			throw new IllegalArgumentException("A expressão deve produzir um único resultado.");
+		}
+		return pilha.pop();
+	}
 }

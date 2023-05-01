@@ -1,59 +1,65 @@
 package application;
 
 import java.util.Scanner;
-
 import util.Calculadora;
 
 public class Program {
-
 	public static void main(String[] args) {
-		Scanner sc = new Scanner(System.in);
+		try (Scanner sc = new Scanner(System.in)) {
+			System.out.println("Informe em qual tipo de notação a expressão está: ");
+			System.out.println("1 - Infixa");
+			System.out.println("2 - Pós-fixa");
+			System.out.println("3 - Pré-fixa");
+			if (!sc.hasNextInt()) {
+				System.out.println("Escolha uma opção de 1 a 3.");
+				return;
+			}
+			int opcao = sc.nextInt();
+			if (opcao < 1 || opcao > 3) {
+				System.out.println("Escolha uma opção de 1 a 3.");
+				return;
+			}
+			if (sc.hasNextLine()) {
+				sc.nextLine();
+			}
+			String notacao = switch (opcao) {
+				case 1 -> "Infixa";
+				case 2 -> "Pós-fixa";
+				default -> "Pré-fixa";
+			};
+			System.out.println("Digite a expressão " + notacao + ": ");
+			if (!sc.hasNextLine()) {
+				return;
+			}
+			String expressao = sc.nextLine();
 
-		Calculadora calc = new Calculadora();
-
-		System.out.println("Informe em qual tipo de notação a expressão está: ");
-		System.out.println("1 - Infixa");
-		System.out.println("2 - Pós-fixa");
-		System.out.println("3 - Pré-fixa");
-		int opcao = sc.nextInt();
-		sc.nextLine();
-
-		switch (opcao) {
-		case 1:
-			System.out.println("Digite a expressão Infixa: ");
-			String expressaoIn = sc.nextLine();
-			String expressaoInFinal = "( " + expressaoIn + " )";
-			System.out.println("\nEm Infixa: " + expressaoIn);
-			System.out.print("Em Pós-fixa: ");
-			calc.InfixaParaPosFixa(expressaoInFinal);
-			System.out.println("\nEm Pré-fixa: " + calc.InfixaParaPosFixaParaPreFixa());
-			System.out.println("Resultado: " + calc.calcularResultadoInfixaPorPosFixa());
-
-			break;
-
-		case 2:
-			System.out.println("Digite a expressão Pós-fixa: ");
-			String expressaoPos = sc.nextLine();
-			System.out.println("\nEm Infixa: " + calc.posFixaParaInfixa(expressaoPos));
-			System.out.println("Em Pós-fixa " + expressaoPos);
-			System.out.println("Em Pré-fixa: " + calc.posFixaParaPreFixa(expressaoPos));
-			System.out.println("Resultado: " + calc.posFixaResultado(expressaoPos));
-
-			break;
-
-		case 3:
-			System.out.println("Digite a expressão Pré-fixa: ");
-			String expressaoPre = sc.nextLine();
-			System.out.println("Em Infixa: "+calc.preFixaParaInfixa(expressaoPre));
-			System.out.print("Em Pós-fixa: ");
-			calc.preFixaParaPosFixa();
-			System.out.println("\nEm Pré-fixa: " + expressaoPre);
-			System.out.println("Resultado: "+ calc.preFixaResultado());
-
-			break;
+			Calculadora calc = new Calculadora();
+			try {
+				switch (opcao) {
+					case 1 -> {
+						System.out.println("Em Infixa: " + expressao);
+						System.out.print("Em Pós-fixa: ");
+						calc.InfixaParaPosFixa(expressao);
+						System.out.println("\nEm Pré-fixa: " + calc.InfixaParaPosFixaParaPreFixa());
+						System.out.println("Resultado: " + calc.calcularResultadoInfixaPorPosFixa());
+					}
+					case 2 -> {
+						System.out.println("Em Infixa: " + calc.posFixaParaInfixa(expressao));
+						System.out.println("Em Pós-fixa: " + expressao);
+						System.out.println("Em Pré-fixa: " + calc.posFixaParaPreFixa(expressao));
+						System.out.println("Resultado: " + calc.posFixaResultado(expressao));
+					}
+					case 3 -> {
+						System.out.println("Em Infixa: " + calc.preFixaParaInfixa(expressao));
+						System.out.print("Em Pós-fixa: ");
+						calc.preFixaParaPosFixa();
+						System.out.println("\nEm Pré-fixa: " + expressao);
+						System.out.println("Resultado: " + calc.preFixaResultado());
+					}
+				}
+			} catch (IllegalArgumentException e) {
+				System.out.println("\nExpressão inválida. " + e.getMessage());
+			}
 		}
-
-		sc.close();
 	}
-
 }
